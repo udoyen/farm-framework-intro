@@ -1,13 +1,10 @@
 # API Server
 fastapi
-uvicorn[standard]
-pydantic[email]
+pydantic
 
 # Database
-motor
-dnspython
+motor[srv]
 
 # Development
 pip-tools
-black
-flake8
+black == 24.4.2
