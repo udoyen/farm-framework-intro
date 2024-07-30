@@ -3,6 +3,8 @@ import asyncio
 from fastapi import FastAPI
 import uvicorn
 from motor.motor_asyncio import AsyncIOMotorClient
+from contextlib import asynccontextmanager
+from fastapi.middleware.cors import CORSMiddleware
 from config import settings
 
 from apps.todo.routers import router as todo_router
@@ -17,19 +19,37 @@ else:
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
     else:
         asyncio.set_event_loop(asyncio.ProactorEventLoop())
-
-app = FastAPI()
-
-
-@app.on_event("startup")
-async def startup_db_client():
+        
+        
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # start the db client
     app.mongodb_client = AsyncIOMotorClient(settings.DB_URL)
     app.mongodb = app.mongodb_client[settings.DB_NAME]
-
-
-@app.on_event("shutdown")
-async def shutdown_db_client():
+    yield
+    # shutdown db client
     app.mongodb_client.close()
+
+app = FastAPI(lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://192.168.56.1:3000"],  # Adjust this based on your React app URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# @app.on_event("startup")
+# async def startup_db_client():
+#     app.mongodb_client = AsyncIOMotorClient(settings.DB_URL)
+#     app.mongodb = app.mongodb_client[settings.DB_NAME]
+
+
+# @app.on_event("shutdown")
+# async def shutdown_db_client():
+#     app.mongodb_client.close()
 
 
 app.include_router(todo_router, tags=["tasks"], prefix="/task")
