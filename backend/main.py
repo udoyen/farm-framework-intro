@@ -1,9 +1,22 @@
+import sys
+import asyncio
 from fastapi import FastAPI
 import uvicorn
 from motor.motor_asyncio import AsyncIOMotorClient
 from config import settings
 
 from apps.todo.routers import router as todo_router
+
+
+# Conditionally set the event loop policy
+if sys.platform != 'win32':
+    import uvloop
+    asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+else:
+    if sys.version_info >= (3, 8):
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+    else:
+        asyncio.set_event_loop(asyncio.ProactorEventLoop())
 
 app = FastAPI()
 
